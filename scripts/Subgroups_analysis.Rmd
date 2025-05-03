@@ -13,7 +13,7 @@ set.seed(123) #For reproducibility
 
 Load input
 ```{r}
-raw_counts = read.csv("data/raw_counts_Mariathasan.csv", row.names = 1)
+raw_counts = read.csv("../input/raw_counts_Mariathasan.csv", row.names = 1)
 ```
 
 Deconvolution

@@ -8,23 +8,21 @@ output: html_document
 Set up environment
 ```{r setup, include=FALSE}
 library(multideconv)
+library(dplyr)
 set.seed(123) #For reproducibility
 ```
 
 Load input
 ```{r}
-counts = read.delim("data/Gide_log2TPM.txt", row.names = 1)
-coldata = read.delim("data/colData_melanoma.txt", sep = " ") %>%
-  dplyr::filter(Cohort == "Gide") %>%
-  tibble::remove_rownames() %>%
-  tibble::column_to_rownames("rna_id")
+counts = read.delim("../input/Gide_log2TPM.txt", row.names = 1)
+coldata = read.csv("../input/Clinical_Gide.csv", row.names = 1)
 ```
 
 Deconvolution
 ```{r}
 deconv = compute.deconvolution(counts, normalized = F, credentials.mail = "marcelo.hurtado@inserm.fr", doParallel = T, workers = 3,
                                credentials.token = "734212f6ad77fc4eea2bdb502792f294", file_name = "Gide")
-deconv = read.csv("Results/Deconvolution_Gide.csv", row.names = 1)
+deconv = read.csv("../output/Deconvolution_Gide.csv", row.names = 1)
 rownames(deconv) = stringr::str_replace(rownames(deconv), "X", "")
 
 subgroups = compute.deconvolution.analysis(deconvolution = deconv, corr = 0.7, seed = 123, file_name = "Gide") 
@@ -45,8 +43,54 @@ res_subgroups = compute.features.training.ML(subgroups[[1]], coldata, "Response"
 save(res_subgroups, file = "ML_model_subgroups_Gide.RData")
 ```
 
+```{r}
+load("~/Documents/ML_model_deconv_Gide.RData")
+load("~/Documents/ML_model_subgroups_Gide.RData")
+```
+
 Compute variable importance
 ```{r}
-importance = compute.variable.importance(res_subgroups, stacking = F, n_cores = 2)
-plot_shap_values(importance, "RF", "Gide_subgroups", width = 10, height = 10)
+importance_subgroups = compute.variable.importance(res_subgroups, stacking = F, n_cores = 2)
+importance_deconv = compute.variable.importance(res_deconv, stacking = F, n_cores = 2)
 ```
+
+Plots CV metrics
+```{r}
+compute_models_metric = function(models, cohort_name){
+  auroc = list()
+  for (i in 1:length(models)){
+    auroc[[i]] = models[[i]]$resample %>% 
+      mutate(model = names(models)[i])
+    names(auroc)[i] = names(models)[i]
+  }
+  auroc_data = do.call(rbind, auroc)
+
+  res_auroc <- auroc_data %>%
+    group_by(model) %>%
+    summarise(
+      Mean_AUROC = median(AUROC),
+      SD_AUROC = sd(AUROC)
+    ) %>%
+    arrange(desc(Mean_AUROC)) %>%
+    mutate(Method = cohort_name)
+}
+
+metrics_raw = compute_models_metric(res_deconv$Model$ML_Models, "Raw_deconvolution")
+metrics_subgroups = compute_models_metric(res_subgroups$Model$ML_Models, "Subgroups_deconvolution")
+metrics_all = rbind(metrics_raw, metrics_subgroups)
+
+pdf("Results/AUROC_CV_methods.pdf", width = 10)
+plot(ggplot(metrics_all, aes(x = model, y = Mean_AUROC, fill = Method)) +
+       geom_bar(stat = "identity", position = position_dodge(), width = 0.6) + 
+       geom_errorbar(aes(ymin = Mean_AUROC - SD_AUROC, ymax = Mean_AUROC + SD_AUROC),
+                     width = 0.2, position = position_dodge(0.6)) +
+       labs(title = "Performance of Models",
+            x = "Model",
+            y = "Median AUROC") +
+       theme_minimal() +
+       theme(axis.text.x = element_text(angle = 45, hjust = 1),
+             legend.position = "right") +
+       scale_y_continuous(breaks = seq(0, 1, by = 0.05))) 
+dev.off()
+```
+
