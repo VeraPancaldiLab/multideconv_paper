@@ -1,5 +1,5 @@
 ---
-title: "Deconvolution_sc"
+title: "Single cell deconvolution"
 author: "Marcelo Hurtado"
 date: "2025-04-22"
 output: html_document
@@ -7,7 +7,7 @@ output: html_document
 
 Set up environment
 ```{r setup, include=FALSE}
-source("cell_deconvolution.R") #Load functions and packages
+library(multideconv)
 set.seed(123) #For reproducibility
 ```
 
@@ -15,7 +15,7 @@ Load input
 ```{r}
 single.cell.data = SeuratDisk::LoadH5Seurat("~/Documents/LungPredict1_paper_complete/RawFiles/scRNAseq_processed_Vanderbilt.h5seurat",  assays = "RNA")
 single.cell.data@meta.data$sample = paste0("Sample_", single.cell.data@meta.data$sample)
-load("~/Documents/multideconv/data/Metacells_Vanderbilt.RData")
+load("~/Documents/multideconv/data/Metacells_Vanderbilt.RData") #Load metacells
 ```
 
 Rename cells to match nomenclature (avoid spaces!)

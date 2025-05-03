@@ -1,5 +1,5 @@
 ---
-title: "Metacells"
+title: "Metacells construction"
 author: "Marcelo Hurtado"
 date: "2025-04-28"
 output: html_document
@@ -8,6 +8,7 @@ output: html_document
 Set up environment
 ```{r setup, include=FALSE}
 library(Seurat)
+library(multideconv)
 set.seed(123) #For reproducibility
 ```
 
