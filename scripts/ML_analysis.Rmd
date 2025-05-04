@@ -9,6 +9,7 @@ Set up environment
 ```{r setup, include=FALSE}
 library(multideconv)
 library(dplyr)
+library(tictoc)
 set.seed(123) #For reproducibility
 ```
 
