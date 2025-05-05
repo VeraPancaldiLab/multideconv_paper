@@ -8,6 +8,8 @@ output: html_document
 Set up environment
 ```{r setup, include=FALSE}
 library(multideconv)
+library(dplyr)
+library(factoextra)
 set.seed(123) #For reproducibility
 ```
 
@@ -18,9 +20,9 @@ raw_counts = read.csv("../input/raw_counts_Mariathasan.csv", row.names = 1)
 
 Deconvolution
 ```{r}
-deconv = compute.deconvolution(raw_counts, normalized = T, credentials.mail = "marcelo.hurtado@inserm.fr", credentials.token = "734212f6ad77fc4eea2bdb502792f294", 
-                               file_name = "Mariathasan", doParallel = T, workers = 6)
-deconv = read.csv("../input/Deconvolution_Mariathasan.csv", row.names = 1)
+deconv = multideconv::compute.deconvolution(raw_counts, normalized = T, credentials.mail = "marcelo.hurtado@inserm.fr", 
+                                            credentials.token = "734212f6ad77fc4eea2bdb502792f294", 
+                                            file_name = "Mariathasan", doParallel = T, workers = 3)
 ```
 
 Cell processing
@@ -54,8 +56,8 @@ extract_base_composition <- function(composition, subgroups) {
 Assign clusters per subgroups
 ```{r}
 cells_types = compute.cell.types(deconv)[[1]] #Extract original deconvolution per cell type
-cells_types_subgroups = subgroups[["Deconvolution groups scores per cell types"]] #Extract cell subgroups matrices
-deconv_subgroups = subgroups[["Deconvolution groups - Linear-based correlation"]] #Extract cell subgroups composition
+cells_types_subgroups = subgroups[["Deconvolution subgroups per cell types"]] #Extract cell subgroups matrices
+deconv_subgroups = subgroups[["Deconvolution subgroups composition"]] #Extract cell subgroups composition
   
 cell_clusters = list()
 all_cells = c()
@@ -95,7 +97,6 @@ Analysis silohuette scores
 for (i in 1:length(cell_clusters)){
   if(length(cell_clusters[[i]])>10){
     cells = names(cell_clusters)[i]
-    
     #Baseline quality
     mat = deconv[,grep(cells, colnames(deconv))] #Extract matrix per cell type from original matrix
     dist_mat <- as.dist(1 - cor(mat)) #Distance matrix
@@ -103,14 +104,12 @@ for (i in 1:length(cell_clusters)){
     k_stats = factoextra::fviz_nbclust(t(mat), FUN = hcut, method = "gap_stat", k.max = ncol(mat) - 1, diss = dist_mat) #Find optimal clusters
     k_cluster = as.numeric(k_stats$data$clusters[which.max(k_stats$data$gap)]) #Extract optimal k
     best_labels <- cutree(hc, k = k_cluster) #Extract clusters labels
-    sil_hc <- compute_silhouette(best_labels, dist_mat) #Compute silhouette score
-    
+    sil_hc <- mean(cluster::silhouette(best_labels, dist_mat)[,3]) #Compute silhouette score
     #Test quality
     mat_sub = deconv[,colnames(deconv) %in% all_cells] #Filter for only features used for subgroupping
     mat_sub = mat_sub[,grep(cells, colnames(mat_sub))] #Distance matrix
     dist_sub <- dist(1 - cor(mat_sub)) #Distance matrix
-    sil_your <- compute_silhouette(cell_clusters[[cells]], dist_sub) #Compute silhouette score
-    
+    sil_your <- mean(cluster::silhouette(cell_clusters[[cells]], dist_sub)[,3]) #Compute silhouette score
     cat("Silhouette comparison", cells, ":\n")
     cat(" - Subgrouping: ", round(sil_your, 3), "\n")
     cat(" - Raw features:  ", round(sil_hc, 3), "\n")
@@ -124,7 +123,7 @@ library(ggplot2)
 
 raw_mat = deconv
 raw_mat = raw_mat[, colSums(raw_mat == 0, na.rm=TRUE) < round(0.9*nrow(raw_mat)) , drop=FALSE]
-raw_mat = remove_low_variance(raw_mat, plot = F)[[1]]
+#raw_mat = remove_low_variance(raw_mat, plot = F)[[1]]
 
 # --- PCA on raw features ---
 pca_raw <- prcomp(raw_mat, center = TRUE, scale. = TRUE)
@@ -174,8 +173,9 @@ k_sub <- kmeans(pca_sub_10, centers = 3)
 
 # Silhouette comparison
 library(cluster)
-sil_raw <- compute_silhouette(k_raw$cluster, dist(pca_raw_10))
-sil_sub <- compute_silhouette(k_sub$cluster, dist(pca_sub_10))
+
+sil_raw <- mean(cluster::silhouette(k_raw$cluster, dist(pca_raw_10))[,3])
+sil_sub <- mean(cluster::silhouette(k_sub$cluster, dist(pca_sub_10))[,3])
 
 cat("Average silhouette (raw):", sil_raw, "\n")
 cat("Average silhouette (subgroups):", sil_sub, "\n")
