@@ -7,20 +7,20 @@ output: html_document
 
 Set up environment
 ```{r setup, include=FALSE}
-library(Seurat)
-library(multideconv)
+require(Seurat)
+require(multideconv)
 set.seed(123) #For reproducibility
 ```
 
 Load input
 ```{r}
-single.cell.data = SeuratDisk::LoadH5Seurat("~/Downloads/Vanderbilt_scRNA/all_samples.h5seurat",  assays = "RNA")
+single.cell.data = readRDS("~/Single_cell_object.rds")
 single.cell.data@meta.data$sample = paste0("Sample_", single.cell.data@meta.data$sample)
 ```
 
 Create metacells
 ```{r}
-metacells = create_metacells(single.cell.data, "annotated_ct", "sample", exclude_cells = NULL, min_cells = 100, k = 30, max_shared = 15, n_workers = 4)
+metacells = multideconv::create_metacells(single.cell.data, "annotated_ct", "sample", exclude_cells = NULL, min_cells = 100, k = 30, max_shared = 15, n_workers = 4)
 ```
 
 Rename cells to match nomenclature (avoid spaces!)

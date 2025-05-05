@@ -1088,9 +1088,9 @@
     },
     "Seurat": {
       "Package": "Seurat",
-      "Version": "5.3.0",
+      "Version": "4.4.0",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "https://satijalab.r-universe.dev",
       "Requirements": [
         "KernSmooth",
         "MASS",
@@ -1099,21 +1099,17 @@
         "RANN",
         "RColorBrewer",
         "ROCR",
-        "RSpectra",
         "Rcpp",
         "RcppAnnoy",
         "RcppEigen",
-        "RcppHNSW",
         "RcppProgress",
         "Rtsne",
         "SeuratObject",
         "cluster",
         "cowplot",
-        "fastDummies",
         "fitdistrplus",
         "future",
         "future.apply",
-        "generics",
         "ggplot2",
         "ggrepel",
         "ggridges",
@@ -1125,8 +1121,7 @@
         "igraph",
         "irlba",
         "jsonlite",
-        "leidenbase",
-        "lifecycle",
+        "leiden",
         "lmtest",
         "matrixStats",
         "methods",
@@ -1136,6 +1131,7 @@
         "plotly",
         "png",
         "progressr",
+        "purrr",
         "reticulate",
         "rlang",
         "scales",
@@ -1150,13 +1146,13 @@
         "utils",
         "uwot"
       ],
-      "Hash": "e983e35c8334ac3da89d768e65e2680e"
+      "Hash": "db5bbaebcc8713fc6ca482c1ffa55bc2"
     },
     "SeuratObject": {
       "Package": "SeuratObject",
-      "Version": "5.1.0",
+      "Version": "4.1.4",
       "Source": "Repository",
-      "Repository": "RSPM",
+      "Repository": "https://satijalab.r-universe.dev",
       "Requirements": [
         "Matrix",
         "R",
@@ -1164,20 +1160,17 @@
         "RcppEigen",
         "future",
         "future.apply",
-        "generics",
         "grDevices",
         "grid",
-        "lifecycle",
         "methods",
         "progressr",
         "rlang",
         "sp",
-        "spam",
         "stats",
         "tools",
         "utils"
       ],
-      "Hash": "65ff3b28264859db07eb01159a05d513"
+      "Hash": "91ee20f75cedf10e0edcbd6362d18d37"
     },
     "SingleCellExperiment": {
       "Package": "SingleCellExperiment",
@@ -2074,16 +2067,6 @@
       ],
       "Hash": "451e5edf411987991ab6a5410c45011f"
     },
-    "dotCall64": {
-      "Package": "dotCall64",
-      "Version": "1.2",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "R"
-      ],
-      "Hash": "7339da8bc231184ec506d7d144776b2a"
-    },
     "downlit": {
       "Package": "downlit",
       "Version": "0.4.4",
@@ -2299,19 +2282,6 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "680887028577f3fa2a81e410ed0d6e42"
-    },
-    "fastDummies": {
-      "Package": "fastDummies",
-      "Version": "1.7.5",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "R",
-        "data.table",
-        "stringr",
-        "tibble"
-      ],
-      "Hash": "cf5006965714fead6732d50eebbf2cde"
     },
     "fastcluster": {
       "Package": "fastcluster",
@@ -3354,16 +3324,18 @@
       "Repository": "P3M",
       "Hash": "06ddb0b69b0714ae929b1b6029d6faf0"
     },
-    "leidenbase": {
-      "Package": "leidenbase",
-      "Version": "0.1.35",
+    "leiden": {
+      "Package": "leiden",
+      "Version": "0.4.3.1",
       "Source": "Repository",
       "Repository": "RSPM",
       "Requirements": [
-        "R",
-        "igraph"
+        "Matrix",
+        "igraph",
+        "methods",
+        "reticulate"
       ],
-      "Hash": "950f12335d1c6eab50fc64b86da717a5"
+      "Hash": "b21c4ae2bb7935504c42bcdf749c04e6"
     },
     "lifecycle": {
       "Package": "lifecycle",
@@ -4825,20 +4797,6 @@
         "utils"
       ],
       "Hash": "d9ff3b753db98bc50650314c8782abe6"
-    },
-    "spam": {
-      "Package": "spam",
-      "Version": "2.11-1",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "R",
-        "Rcpp",
-        "dotCall64",
-        "grid",
-        "methods"
-      ],
-      "Hash": "36844fd20140325f520b86a5cf724378"
     },
     "sparseMatrixStats": {
       "Package": "sparseMatrixStats",
