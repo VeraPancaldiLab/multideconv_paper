@@ -7,9 +7,9 @@ output: html_document
 
 Set up environment
 ```{r setup, include=FALSE}
-library(multideconv)
-library(dplyr)
-library(tictoc)
+require(multideconv)
+require(dplyr)
+require(tictoc)
 set.seed(123) #For reproducibility
 ```
 

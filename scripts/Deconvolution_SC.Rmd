@@ -13,7 +13,7 @@ set.seed(123) #For reproducibility
 
 Load input
 ```{r}
-single.cell.data = SeuratDisk::LoadH5Seurat("~/Documents/LungPredict1_paper_complete/RawFiles/scRNAseq_processed_Vanderbilt.h5seurat",  assays = "RNA")
+single.cell.data = LoadH5Seurat("~/Documents/LungPredict1_paper_complete/RawFiles/scRNAseq_processed_Vanderbilt.h5seurat",  assays = "RNA")
 single.cell.data@meta.data$sample = paste0("Sample_", single.cell.data@meta.data$sample)
 load("~/Documents/multideconv/data/Metacells_Vanderbilt.RData") #Load metacells
 ```

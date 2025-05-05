@@ -10,7 +10,10 @@ output: html_document
 library(ggplot2)
 library(tidyr)
 library(dplyr)
-
+require(gitcreds)
+require(yaml)
+require(Matrix)
+require(factoextra)
 # Example data: mtcars dataset
 data(mtcars)
 
