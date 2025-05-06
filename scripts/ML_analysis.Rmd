@@ -24,30 +24,40 @@ Deconvolution
 deconv = compute.deconvolution(counts, normalized = F, credentials.mail = "marcelo.hurtado@inserm.fr", doParallel = T, workers = 3,
                                credentials.token = "734212f6ad77fc4eea2bdb502792f294", file_name = "Gide")
 rownames(deconv) = stringr::str_replace(rownames(deconv), "X", "")
-
+#Subgroups
 subgroups = compute.deconvolution.analysis(deconvolution = deconv, corr = 0.7, seed = 123, file_name = "Gide") 
-```
-
-Remove zero features
-```{r}
+#Remove high zero columns
 deconv = deconv[, colSums(deconv == 0, na.rm=TRUE) < round(0.9*nrow(deconv)) , drop=FALSE]
+#Remove low variance features
+vars <- apply(deconv, 2, var)
+low_variance <- which(vars < summary(vars)[[2]])
+deconv = deconv[,-low_variance, drop = F]
 ```
 
 ML training
 ```{r}
 source("~/Documents/CellTFusion_paper/user_projects/src/environment_set.R")
 source("~/Documents/CellTFusion_paper/user_projects/src/machine_learning.R")
+tictoc::tic() #660.042
 res_deconv = compute.features.training.ML(deconv, coldata, "Response", "R", metric = "AUROC", stack = F, k_folds = 5, n_rep = 20, 
-                                          feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = T)
+                                          feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = F)
+tictoc::toc()
 
+tictoc::tic() #563.052
 res_subgroups = compute.features.training.ML(subgroups[[1]], coldata, "Response", "R", metric = "AUROC", stack = F, k_folds = 5, n_rep = 20, 
-                                             feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = T)
+                                             feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = F)
+tictoc::toc()
 ```
 
 Compute variable importance
 ```{r}
+tic() #213.419 
 importance_subgroups = compute.variable.importance(res_subgroups, stacking = F, n_cores = 2)
+toc()
+
+tic() #2465.616
 importance_deconv = compute.variable.importance(res_deconv, stacking = F, n_cores = 2)
+toc()
 ```
 
 Plots CV metrics
