@@ -1,0 +1,91 @@
+---
+title: "Zilionis_scRNA"
+author: "Marcelo Hurtado"
+date: "2025-06-19"
+output: html_document
+---
+
+Load libraries
+```{r}
+library(Decosus)
+library(dplyr)
+library(multideconv)
+```
+
+Load object
+```{r}
+load("~/Downloads/Zilionis_scRNA/Metacells_Zilionis.RData")
+```
+
+Load pseudobulk
+```{r}
+pseudobulk = read.csv("../../LungPredict_DC_paper/input/pseudobulk_Zilionis.csv", row.names = 1, sep = "\t")
+```
+
+Load deconvolution 
+```{r}
+deconv_multideconv = read.csv("../../LungPredict_DC_paper/input/Deconvolution_Zilionis_pseudobulk.csv", row.names = 1)
+deconv_multideconv = deconv_multideconv[,-grep("Zilionis", colnames(deconv_multideconv))]
+```
+
+Deconvolution multideconv pseudobulk
+```{r}
+deconv_subgroups = multideconv::compute.deconvolution.analysis(deconv_multideconv)
+colnames(deconv_subgroups[[1]]) = paste0("multideconv_", colnames(deconv_subgroups[[1]]))
+```
+
+Consensus TME
+```{r}
+deconv_consensus = t(immunedeconv::deconvolute_consensus_tme(pseudobulk, indications = rep('luad', ncol(pseudobulk))))
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "B_cells", "B.cells")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "Mast_cells", "Mast.cells")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "NK_cells", "NK.cells")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "T_cells_CD4", "CD4.cells")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "T_cells_CD8", "CD8.cells")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "T_regulatory_cells", "T.cells.regulatory")
+colnames(deconv_consensus) = stringr::str_replace(colnames(deconv_consensus), "Plasma_cells", "Plasma")
+colnames(deconv_consensus) = paste0("Consensus_", colnames(deconv_consensus))
+```
+
+Decosus
+```{r}
+deconv_decosus <- t(Decosus::cosDeco(x=pseudobulk %>% tibble::rownames_to_column("gene"))$main_samples)
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), " ", ".")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Endothelial\\.cell_consensus", "Endothelial")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Mast\\.cell_consensus", "Mast.cells")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "B\\.cell_consensus", "B.cells")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "NK\\.cell_consensus", "NK.cells")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "T\\.cell\\.CD8\\+_consensus", "CD8.cells")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "T\\.cell\\.regulatory\\.\\(Tregs\\)_consensus", "T.cells.regulatory")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Cancer\\.associated\\.fibroblast_consensus", "CAF")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Macrophage\\_consensus", "Macrophages.cells")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Monocyte\\_consensus", "Monocytes")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Neutrophil\\_consensus", "Neutrophils")
+colnames(deconv_decosus) <- stringr::str_replace_all(colnames(deconv_decosus), "Myeloid\\.dendritic\\.cell_consensus", "Dendritic.cells")
+colnames(deconv_decosus) = paste0("Decosus_", colnames(deconv_decosus))
+```
+
+Benchmarking deconvolution
+
+Groundtruth
+```{r}
+tab <- table(metacells@meta.data$Patient, metacells@meta.data$new_annotation)
+cells_groundtruth <- as.data.frame.matrix(prop.table(tab, margin = 1))
+```
+
+Benchmark 
+```{r}
+#[,grep("Subgroup", colnames(deconv_subgroups[[1]]))]
+source("benchmark_function.R")
+data = cbind(deconv_subgroups[[1]], deconv_consensus, deconv_decosus)
+corr_matrix = benchmarking_deconvolution(data, cells_groundtruth, include_combinations = c("multideconv", "Decosus", "Consensus"),
+                                         corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Zilionis_benchmark", height = 5, width = 10)
+```
+
+Benchmark subgroups performance
+```{r}
+x = deconv_subgroups[[1]][,grep("Subgroup", colnames(deconv_subgroups[[1]]))]
+corr_matrix = benchmarking_deconvolution(x, cells_groundtruth, include_combinations = c("Subgroup.1.Iteration.1", "Subgroup.1.Iteration.2",
+                                                                                        "Subgroup.2.Iteration.1"),
+                                         corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Zilionis_Subgroups", height = 5, width = 10)
+```

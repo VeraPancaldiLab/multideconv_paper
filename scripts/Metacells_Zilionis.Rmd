@@ -1,0 +1,63 @@
+---
+title: "multideconv"
+author: "Marcelo Hurtado"
+date: "2025-05-09"
+output: html_document
+---
+
+Load libraries
+```{r}
+library(multideconv)
+library(Seurat)
+library(dplyr)
+```
+
+Load object
+```{r}
+load("~/Downloads/Zilionis_scRNA/Zilionis_scRNAseq.RData")
+```
+
+Create metacells
+```{r}
+metacells = multideconv::create_metacells(seurat_object, 
+                                          labels_column = "new_annotation", 
+                                          samples_column = "Patient", 
+                                          min_cells = 50, 
+                                          k = 30, 
+                                          max_shared = 15, 
+                                          n_workers = 5, 
+                                          min_meta = 10)
+```
+
+Analize metacells
+```{r}
+metacells = Seurat::CreateSeuratObject(metacells$Counts, meta.data = metacells$Metadata)
+metacells <- FindVariableFeatures(object = metacells)
+metacells <- ScaleData(metacells)
+metacells <- RunPCA(metacells, features = VariableFeatures(object = metacells))
+ElbowPlot(metacells) #determine dimensionality of data
+metacells = FindNeighbors(metacells, dims = 1:20)
+metacells = FindClusters(metacells, resolution = 1)
+metacells <- RunUMAP(metacells, dims = 1:10)
+
+DimPlot(metacells, reduction="umap", label = T, group.by = "new_annotation")
+```
+
+Rename cells to match nomenclature (avoid spaces!)
+```{r}
+metacells@meta.data <- metacells@meta.data %>%
+  dplyr::mutate(new_annotation = dplyr::recode(new_annotation,
+                                               "B cells" = "B.cells",
+                                               "Macrophages" = "Macrophages.cells",
+                                               "Mast cells" = "Mast.cells",
+                                               "Dendritic cells" = "Dendritic.cells",
+                                               "T cells" = "Tcells",
+                                               "NK cells" = "NK.cells",
+                                               "Plasma cells" = "Plasma"))
+```
+
+Save metacells
+```{r}
+save(metacells, file = "Metacells_Zilionis.RData")
+```
+
