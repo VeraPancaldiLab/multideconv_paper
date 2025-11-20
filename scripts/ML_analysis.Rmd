@@ -10,6 +10,8 @@ Set up environment
 require(multideconv)
 require(dplyr)
 require(tictoc)
+require(pipeML)
+require(caret)
 set.seed(123) #For reproducibility
 ```
 
@@ -21,11 +23,13 @@ coldata = read.csv("../input/Clinical_Gide.csv", row.names = 1)
 
 Deconvolution
 ```{r}
-deconv = compute.deconvolution(counts, normalized = F, credentials.mail = "marcelo.hurtado@inserm.fr", doParallel = T, workers = 3,
-                               credentials.token = "734212f6ad77fc4eea2bdb502792f294", file_name = "Gide")
+# deconv = compute.deconvolution(counts, normalized = F, credentials.mail = "marcelo.hurtado@inserm.fr", doParallel = T, workers = 3,
+#                                credentials.token = "734212f6ad77fc4eea2bdb502792f294", file_name = "Gide")
+deconv = read.csv("../output/Deconvolution_Gide.csv", row.names = 1)
 rownames(deconv) = stringr::str_replace(rownames(deconv), "X", "")
 #Subgroups
-subgroups = compute.deconvolution.analysis(deconvolution = deconv, corr = 0.7, seed = 123, file_name = "Gide") 
+#subgroups = compute.deconvolution.analysis(deconvolution = deconv, corr = 0.7, seed = 123, file_name = "Gide") 
+load("../output/Subgroups_Gide.RData")
 #Remove high zero columns
 deconv = deconv[, colSums(deconv == 0, na.rm=TRUE) < round(0.9*nrow(deconv)) , drop=FALSE]
 #Remove low variance features
@@ -36,28 +40,55 @@ deconv = deconv[,-low_variance, drop = F]
 
 ML training
 ```{r}
-source("~/Documents/CellTFusion_paper/user_projects/src/environment_set.R")
-source("~/Documents/CellTFusion_paper/user_projects/src/machine_learning.R")
-tictoc::tic() #660.042
-res_deconv = compute.features.training.ML(deconv, coldata, "Response", "R", metric = "AUROC", stack = F, k_folds = 5, n_rep = 20, 
-                                          feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = F)
+tictoc::tic() #928.458
+res_deconv <- compute_features.training.ML(features_train = deconv, 
+                                          target_var = coldata$Response,
+                                          task_type = "classification",
+                                          trait.positive = "R",
+                                          metric = "AUROC",
+                                          stack = FALSE,
+                                          k_folds = 5,
+                                          n_rep = 20,
+                                          LODO = FALSE,
+                                          batch_id = NULL,
+                                          file_name = "Gide_deconv_raw",
+                                          ncores = 4,
+                                          return = FALSE)
 tictoc::toc()
+save(res_deconv, file = "ML_models_Gide_raw_deconv.RData")
 
-tictoc::tic() #563.052
-res_subgroups = compute.features.training.ML(subgroups[[1]], coldata, "Response", "R", metric = "AUROC", stack = F, k_folds = 5, n_rep = 20, 
-                                             feature.selection = F, seed = 123, file_name = "Gide_subgroups", return = F)
+tictoc::tic() #883.211
+res_subgroups <- compute_features.training.ML(features_train = subgroups[[1]], 
+                                              target_var = coldata$Response,
+                                              task_type = "classification",
+                                              trait.positive = "R",
+                                              metric = "AUROC",
+                                              stack = FALSE,
+                                              k_folds = 5,
+                                              n_rep = 20,
+                                              LODO = FALSE,
+                                              batch_id = NULL,
+                                              file_name = "Gide_deconv_subgroups",
+                                              ncores = 4,
+                                              return = FALSE)
 tictoc::toc()
+save(res_subgroups, file = "ML_models_Gide_subgroups_deconv.RData")
 ```
 
 Compute variable importance
 ```{r}
-tic() #213.419 
-importance_subgroups = compute.variable.importance(res_subgroups, stacking = F, n_cores = 2)
+tic() #304.987 
+importance_subgroups = compute_variable.importance(res_subgroups, stacking = F, n_cores = 2)
 toc()
+save(importance_subgroups, file = "SHAP_importance_Gide_subgroups_deconv.RData")
 
-tic() #2465.616
-importance_deconv = compute.variable.importance(res_deconv, stacking = F, n_cores = 2)
+tic() #5010.063
+importance_deconv = compute_variable.importance(res_deconv, stacking = F, n_cores = 2)
 toc()
+save(importance_deconv, file = "SHAP_importance_Gide_raw_deconv.RData")
+
+pipeML::plot_shap_values(importance_subgroups, res_subgroups$Model$method, file_name = "SHAP_importance_Gide_subgroups_deconv")
+pipeML::plot_shap_values(importance_deconv, res_deconv$Model$method, file_name = "SHAP_importance_Gide_raw_deconv")
 ```
 
 Plots CV metrics
@@ -81,8 +112,8 @@ compute_models_metric = function(models, cohort_name){
     mutate(Method = cohort_name)
 }
 
-metrics_raw = compute_models_metric(res_deconv$Model$ML_Models, "Raw_deconvolution")
-metrics_subgroups = compute_models_metric(res_subgroups$Model$ML_Models, "Subgroups_deconvolution")
+metrics_raw = compute_models_metric(res_deconv$ML_Models, "Raw_deconvolution")
+metrics_subgroups = compute_models_metric(res_subgroups$ML_Models, "Subgroups_deconvolution")
 metrics_all = rbind(metrics_raw, metrics_subgroups)
 
 pdf("Results/AUROC_CV_methods.pdf", width = 10)

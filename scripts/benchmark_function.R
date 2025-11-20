@@ -104,6 +104,11 @@ benchmarking_deconvolution = function(deconvolution, groundtruth, include_combin
   }else{
     corr_matrix = corr_matrix
   }
+  
+  ## remove NA columns
+  corr_matrix = corr_matrix %>%
+    dplyr::select(dplyr::where(~ !all(is.na(.))))
+  
   corr_matrix[nrow(corr_matrix)+1,] = colMeans(corr_matrix, na.rm = T)
   rownames(corr_matrix)[nrow(corr_matrix)] = "average"
   

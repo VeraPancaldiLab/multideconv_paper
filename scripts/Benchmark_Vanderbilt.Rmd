@@ -65,18 +65,49 @@ cells_groundtruth = read.csv("../output/Cells_groundtruth_Vanderbilt.csv", row.n
 
 Benchmark 
 ```{r}
-source("benchmark_function.R")
 data = cbind(deconv_subgroups[[1]], deconv_consensus, deconv_decosus)
-corr_matrix = benchmarking_deconvolution(data, cells_groundtruth, include_combinations = c("multideconv", "Decosus", "Consensus"),
+corr_matrix = compute.benchmark(data, cells_groundtruth, include_combinations = c("multideconv", "Decosus", "Consensus"),
                                          corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt_benchmark", height = 5, width = 10)
 ```
 
 Benchmark subgroups performance
 ```{r}
-x = deconv_subgroups[[1]][,grep("Subgroup", colnames(deconv_subgroups[[1]]))]
-corr_matrix = benchmarking_deconvolution(x, cells_groundtruth, include_combinations = c("Subgroup.1.Iteration.1", "Subgroup.1.Iteration.2",
-                                                                                        "Subgroup.2.Iteration.1",                                                     
-                                                                                        "Subgroup.3.Iteration.1", "Subgroup.4.Iteration.1"),
-                                         corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt_Subgroups", height = 5, width = 10)
+source("benchmark_function.R")
+source("~/Documents/multideconv/R/cell_deconvolution.R")
+deconv_1 = deconv_subgroups[[1]][,-grep("Subgroup", colnames(deconv_subgroups[[1]]))]
+deconv_sub = deconv_subgroups[[1]][,grep("Subgroup", colnames(deconv_subgroups[[1]]))]
+
+corr_matrix_deconv = compute.benchmark(deconv_1, cells_groundtruth, 
+                                corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt_Subgroups")
+corr_matrix_subgroups = benchmarking_deconvolution(deconv_sub, cells_groundtruth, 
+                                                   include_combinations = c("Subgroup.1.Iteration.1", "Subgroup.1.Iteration.2",
+                                                                            "Subgroup.2.Iteration.1",                                                     
+                                                                            "Subgroup.3.Iteration.1", "Subgroup.4.Iteration.1"),
+                                corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt_Subgroups")
+
+corr_matrix_deconv = corr_matrix_deconv[rownames(corr_matrix_deconv)%in%rownames(corr_matrix_subgroups),]
+corr_matrix_subgroups = corr_matrix_subgroups[rownames(corr_matrix_subgroups)%in%rownames(corr_matrix_deconv),]
+
+corr_all = cbind(corr_matrix_deconv, corr_matrix_subgroups)
+
+corr_df <- melt(corr_all)
+corr_df = corr_df %>%
+  mutate(Cells = rep(rownames(corr_all), ncol(corr_all)))
+
+g <- corr_df %>%
+  dplyr::filter(Cells != "average") %>%
+  ggplot(aes(Cells, variable, fill=value, label=round(value,2))) +
+  geom_tile() +
+  labs(x = NULL, y = NULL, fill = paste0(corr_type, "'s\nCorrelation"), title="Vanderbilt - multideconv subgroups") +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-1,1)) +
+  geom_text() +
+  theme_classic() +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_y_discrete(expand=c(0,0)) +
+  ggpubr::rotate_x_text(angle = 45) + theme(axis.text.x=ggtext::element_markdown()) + theme(axis.text.y=ggtext::element_markdown())
+
+pdf("Benchmark_plot_subgroups", width = 10, height = 8)
+print(g)
+dev.off()
 ```
 

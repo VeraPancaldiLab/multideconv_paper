@@ -55,7 +55,7 @@ Deconvolution all without signature creation
 deconv = compute.deconvolution(bulk_data, normalized = F, credentials.mail = "marcelo.hurtado@inserm.fr", credentials.token = "734212f6ad77fc4eea2bdb502792f294",
                                file_name = "Pseudobulk", create_signature = F,  sc_matrix = metacells@assays$RNA@counts, sc_metadata = metacells@meta.data, sc_deconv = T,
                                cell_label = "annotated_ct", sample_label = "sample", name_sc_signature = "Vanderbilt", workers = 6)
-#deconv = read.csv("data/Deconvolution_Pseudobulk.csv", row.names = 1)
+#deconv = read.csv("../output/Deconvolution_Pseudobulk.csv", row.names = 1)
 ```
 
 Benchmarking deconvolution
@@ -64,12 +64,12 @@ Groundtruth
 ```{r}
 tab <- table(single.cell.data@meta.data$sample, single.cell.data@meta.data$annotated_ct)
 cells_groundtruth <- as.data.frame.matrix(prop.table(tab, margin = 1))
-#cells_groundtruth = read.csv("data/Cells_groundtruth_Vanderbilt.csv", row.names = 1)
+#cells_groundtruth = read.csv("../output/Cells_groundtruth_Vanderbilt.csv", row.names = 1)
 ```
 
 Benchmark 
 ```{r}
 deconv = deconv[,-grep("Quantiseq_uncharacterized_cell", colnames(deconv))]
 corr_matrix = compute.benchmark(deconv, cells_groundtruth, cells_extra = c("Mural.cells", "Myeloid.cells", "T.cells.proliferative"),
-                                corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt", height = 12, width = 12)
+                                corr_type = "pearson", scatter = F, pval = 0.05, file_name = "Vanderbilt", plot = T, height = 12, width = 12)
 ```
